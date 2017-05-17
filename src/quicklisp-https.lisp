@@ -9,7 +9,6 @@
   "Request URL and write the body of the response to FILE."
   (declare (ignorable follow-redirects maximum-redirects))
   (dex:fetch (ql-http::urlstring (ql-http:url url)) file
-             :verbose (not quietly)
              :if-exists :supersede)
   (values (make-instance 'ql-http::header :status 200)
           (probe-file file)))
