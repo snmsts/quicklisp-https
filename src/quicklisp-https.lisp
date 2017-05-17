@@ -7,7 +7,7 @@
 #+quicklisp
 (defun fetch-via-dexador (url file &key (follow-redirects t) quietly (maximum-redirects 10))
   "Request URL and write the body of the response to FILE."
-  (declare (ignorable follow-redirects maximum-redirects))
+  (declare (ignorable follow-redirects quietly maximum-redirects))
   (dex:fetch (ql-http::urlstring (ql-http:url url)) file
              :if-exists :supersede)
   (values (make-instance 'ql-http::header :status 200)
