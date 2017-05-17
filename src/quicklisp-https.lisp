@@ -1,57 +1,27 @@
-(in-package :cl-user)
 (defpackage quicklisp-https
-  (:use :cl))
+  (:use :cl)
+  (:export :setup))
+
 (in-package :quicklisp-https)
 
-(defgeneric fetch (type params)
-  (:documentation ""))
+#+quicklisp
+(defun fetch-via-dexador (url file &key (follow-redirects t) quietly (maximum-redirects 10))
+  "Request URL and write the body of the response to FILE."
+  (declare (ignorable follow-redirects maximum-redirects))
+  (dex:fetch (ql-http::urlstring (ql-http:url url)) file
+             :verbose (not quietly)
+             :if-exists :supersede)
+  (values (make-instance 'ql-http::header :status 200)
+          (probe-file file)))
 
-(defvar *fetch-method* nil)
+(defun setup (&key overwirte (methods '("https")))
+  (declare (ignorable overwirte methods))
+  #+quicklisp
+  (dolist (x methods)
+    (when (or (not (find x ql-http:*fetch-scheme-functions* :test 'equal :key 'first))
+              overwirte)
+      (setf ql-http:*fetch-scheme-functions*
+            (acons x 'fetch-via-dexador
+                   (remove x ql-http:*fetch-scheme-functions* :key 'first :test 'equal))))))
 
-(setf (fdefinition (find-symbol (string :fetch) :ql-http))
-      (lambda
-          (url file &key (follow-redirects t) quietly (maximum-redirects 10))
-        "Request URL and write the body of the response to FILE."
-        (let ((result (fetch *fetch-method* (list :url url
-                                                  :file file
-                                                  :follow-redirects follow-redirects
-                                                  :quietly quietly
-                                                  :maximum-redirects maximum-redirects))))
-          (values
-           (make-instance 'ql-http::header
-                          :status (if result 200 500))
-           (when result (probe-file file))))))
-
-(defmethod fetch ((type (eql nil)) param)
-  (cond ((and (find-package :dexador)
-              (not (find :dexador-no-ssl *features*))
-              (fetch :dexador param)))
-        ((find :ros.init *features*) (fetch :roswell param))
-        (t (fetch :quicklisp param))))
-
-(defmethod fetch ((type (eql :roswell)) param)
-  (if (find :ros.init *features*)
-      (funcall (find-symbol (find-symbol (string '#:roswell) '#:ros))
-               `("roswell-internal-use" "download"
-                                        ,(ql-http::urlstring
-                                          (ql-http:url (getf param :url)))
-                                        ,(getf param :file) "2")
-               (if (find :abcl *features*)
-                   :interactive
-                   *standard-output*))
-      (error "fail to find roswell component")))
-
-(defmethod fetch ((type (eql :dexador)) param)
-  (multiple-value-bind (i code)
-      (dex:get (ql-http::urlstring
-                (ql-http:url (getf param :url)))
-               :force-binary t
-               :want-stream t)
-    (if (<= 500 code)
-        nil
-        (with-open-file (o (getf param :file)
-                           :direction :output
-                           :element-type '(unsigned-byte 8)
-                           :if-exists :rename-and-delete)
-          (uiop:copy-stream-to-stream i o :element-type '(unsigned-byte 8))
-          t))))
+(setup)

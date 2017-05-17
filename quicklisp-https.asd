@@ -1,11 +1,4 @@
-#|
-  This file is a part of quicklisp-https project.
-|#
-
-(in-package :cl-user)
-(defpackage quicklisp-https-asd
-  (:use :cl :asdf))
-(in-package :quicklisp-https-asd)
+(in-package :asdf-user)
 
 (defsystem quicklisp-https
   :version "0.1"
@@ -15,7 +8,7 @@
   :components ((:module "src"
                 :components
                 ((:file "quicklisp-https"))))
-  :description ""
+  :description "Https support patch for quicklisp."
   :long-description
   #.(with-open-file (stream (merge-pathnames
                              #p"README.md"
@@ -27,5 +20,4 @@
                                :element-type 'character
                                :fill-pointer t)))
           (setf (fill-pointer seq) (read-sequence seq stream))
-          seq)))
-  :in-order-to ((test-op (test-op quicklisp-https-test))))
+          seq))))
